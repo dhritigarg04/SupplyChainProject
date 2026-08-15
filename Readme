@@ -1,0 +1,99 @@
+# Supply Chain Risk Intelligence Platform
+
+A SQL Server + Power BI analytics platform simulating a global electronics
+manufacturer's supply chain, built to identify and quantify supplier, shipment,
+and geopolitical risk before it impacts revenue.
+
+## Overview
+
+Global supply chains often don't reveal risk until it's already caused a delay
+or cost money — a supplier strike, a congested port, bad weather. This project
+simulates a realistic multinational electronics manufacturer and builds the
+tools to surface that risk earlier: a normalized relational database, a library
+of analytical SQL queries, and an interactive executive dashboard.
+
+## What's Included
+
+- **Database schema** — an 18-table normalized SQL Server database (suppliers,
+  shipments, inventory, ports, weather events, political risk, and more)
+- **Realistic simulated data** — 300,000+ rows generated in Python, with real
+  cause-and-effect relationships (e.g., shipment delays are driven by weather
+  severity and political risk signals in the same dataset, not randomly assigned)
+- **SQL query library** — 19+ queries spanning beginner to advanced SQL: joins,
+  subqueries, CASE statements, CTEs, window functions, views, stored procedures,
+  and transactions
+- **Power BI dashboard** — an executive overview page with KPI cards, a global
+  risk map, and a delay trend visualization, powered by custom DAX measures
+
+## Tech Stack
+
+- **SQL Server** — database design, storage, and querying
+- **Python** (pandas, numpy) — synthetic data generation
+- **Power BI** — dashboard and DAX measures
+
+## Project Structure
+
+```
+├── sql/
+│   ├── 01_create_schema.sql       # Full database schema (18 tables, keys, indexes)
+│   ├── 02_load_data.sql           # Bulk data loading script
+│   └── 03_sql_curriculum.sql      # 19+ queries: beginner → advanced SQL
+├── data_gen/
+│   └── generate_data.py           # Synthetic data generator (Python)
+├── powerbi/
+│   ├── supplychain_project.pbix   # Power BI dashboard file
+└── README.md
+```
+
+## Database Design
+
+The schema is organized into four groups of tables:
+- **Reference tables**: countries, suppliers, factories, products, warehouses, ports
+- **Bridge tables**: supplier_products, factory_suppliers, product_factories (many-to-many relationships)
+- **Transaction tables**: purchase_orders, shipments, customer_orders, inventory, returns
+- **Risk signal tables**: weather_events, news_events, political_risk_index, fuel_prices
+
+All tables use primary/foreign keys for referential integrity, with indexes on
+frequently filtered/joined columns (dates, IDs) for query performance.
+
+## Example: Finding the Riskiest Supplier Per Country
+
+```sql
+WITH SupplierRisk AS (
+    SELECT supplier_id, supplier_name, country_id, reliability_score,
+    ROW_NUMBER() OVER (PARTITION BY country_id ORDER BY reliability_score ASC) AS risk_rank
+    FROM suppliers
+)
+SELECT sr.supplier_name, c.country_name, sr.reliability_score
+FROM SupplierRisk sr
+JOIN countries c ON sr.country_id = c.country_id
+WHERE sr.risk_rank = 1
+ORDER BY sr.reliability_score ASC;
+```
+
+## Dashboard
+
+The Power BI Executive Overview page includes:
+- KPI cards: Delayed Shipments, Avg Delay Days, Revenue at Risk, Critical Suppliers
+- A global risk map (country risk score visualized by bubble size)
+- A delay trend chart
+
+Key DAX measure example:
+```
+Revenue at Risk =
+CALCULATE(
+    SUMX(shipments, RELATED(purchase_orders[quantity]) * RELATED(products[unit_price])),
+    shipments[delay_days] > 3
+)
+```
+
+## Notes
+
+This project uses simulated data, generated to reflect realistic relationships
+(e.g., delays correlate with weather and political risk events) rather than
+random values, since real proprietary supply chain data isn't publicly available.
+
+## Author
+
+Dhriti Garg — built as a portfolio project to demonstrate SQL, database design,
+and BI/data visualization skills.
